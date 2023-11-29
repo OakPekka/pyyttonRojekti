@@ -1,27 +1,38 @@
-import csv
-import os
+import re
+
+log_file = 'C:\esimerkki\pyyttonRojekti\data3.log'  # Log tiedoston sijainti
+start_time = "07:00"  # alkuaika
+end_time = "15:30"    # Loppuaika
+output_log_file = 'C:\esimerkki\pyyttonRojekti\loppusijoituspaikka.log'  # Tähän se mihin tiedostoon haluut sen
 
 
-file_path = 'file2.csv'
-stop_substring = '15:30'
-copy_file_path = "file4.csv"
-apu_taulukko = []
-apu_boolean = False
-with open(file_path, 'r', newline='') as csvfile:
-    reader = csv.reader(csvfile)
-    for row in reader:
-        if not apu_boolean:
-            found_in_row = any(stop_substring in column_data for column_data in row)
-            if found_in_row:
-                apu_boolean = True
-                stop_column_index = row.index(next((column_data for column_data in row if stop_substring in column_data), None))
-                apu_taulukko.append(row[:stop_column_index + 1])
-                break  
-            else:
-                apu_taulukko.append(row)  
+prev_second = None
 
-print(apu_taulukko)
 
-with open(copy_file_path, 'w', newline='') as copyfile:
-    writer = csv.writer(copyfile)
-    writer.writerows(apu_taulukko)
+with open(output_log_file, 'w') as output_file:
+    
+    try:
+        with open(log_file, 'r') as file:
+            for line in file:
+                
+                split_line = line.strip().split('\t')
+                
+                # Extract timestamp from the split line
+                timestamp = split_line[0]
+                # Extract the time part (HH:MM:SS) from the timestamp
+                time_part = timestamp.split()[1].split('.')[0]
+                current_second = time_part.split(':')[-1]  # Extract the second
+                
+                
+                if start_time <= time_part <= end_time:
+                    
+                    if current_second != prev_second:
+                        cleaned_line = re.sub(r'<..>', '', line)  
+                        output_file.write(cleaned_line.strip() + '\n')  
+                        prev_second = current_second  
+    except FileNotFoundError:
+        print(f"eI LÖYDY'{log_file}' ")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+print(f"Filtteröidyt rivit printattu tiedostoon '{output_log_file}'. :D")
